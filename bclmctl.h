@@ -16,7 +16,6 @@
 #ifndef SMCTOOL_H
 #define SMCTOOL_H
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-#define KEYBUFSIZE 5
+#define PERCENT_SIZE 4
 
 #endif /* SMCTOOL_H */

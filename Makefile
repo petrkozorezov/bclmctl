@@ -15,13 +15,13 @@
 
 CC = gcc
 CFLAGS = -O2 -Wall -W
-PROGRAM = smctool
+PROGRAM = bclmctl
 INSTALL = /usr/bin/env install
 PREFIX	= /usr/local
 
 all: $(PROGRAM)
 
-$(PROGRAM): smc.o smctool.o
+$(PROGRAM): smc.o bclmctl.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 install: $(PROGRAM)
