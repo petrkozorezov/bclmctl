@@ -1,43 +1,26 @@
-# smctool
+# bclmctl
 
-A Linux userspace tool to read Apple SMC keys. Supports various data types and output formats.
-This tool is a part of the coreboot project.
+A Linux userspace tool to read and write the `BCLM` Apple SMC key, which limits the maximum battery charge level on Apple laptops. This program was inspired by [AlDente](https://github.com/davidwernhart/AlDente) for macOS and is based on [smctool](https://github.com/gch1p/smctool).
 
 ### Usage
 
 ##### Main options
 
 ```
--h, --help:         print help
--k, --key <name>:   key name
--t, --type <type>:  data type, see below
+-h, --help:             print help
+-p, --percent <name>:   value to write to BCLM
 ```
 
-##### Output format options:
+
+Reading BCLM:
 ```
---output-hex:  print value as a hexadecimal number
---output-bin:  print binary representation
+$ bclmctl
+BCLM = 80
 ```
-
-##### Supported data types
-`ui8`, `ui16`, `ui32`, `si8`, `si16`, `flag`, `fpXY`, `spXY`
-
-**fp** and **sp** are unsigned and signed fixed point data types respectively.
-The `X` in **fp** and **sp** data types is integer bits count and `Y` is fraction bits count.
-
-For example: `fpe2` means 14 integer bits, 2 fraction bits, `sp78` means 7 integer bits, 8 fraction bits (and one sign bit).
-
-### Examples
-
-Reading battery level:
+Writing BCLM:
 ```
-smctool -k B0FC -t ui16  # returns Full Capacity of Battery 0
-smctool -k B0RM -t ui16  # returns Remaining Capacity of Batery 0
-```
-
-Reading fan speed:
-```
-smctool -k F0Ac -t fpe2
+$ bclmctl -p 80
+BCLM = 80
 ```
 
 ### License
