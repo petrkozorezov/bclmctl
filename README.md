@@ -7,8 +7,8 @@ A Linux userspace tool to read and write the `BCLM` Apple SMC key, which limits 
 ##### Main options
 
 ```
--h, --help:             print help
--p, --percent <name>:   value to write to BCLM
+-h, --help:               print help
+-p, --percent <number>:   value to write to BCLM
 ```
 
 

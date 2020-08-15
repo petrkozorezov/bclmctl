@@ -29,8 +29,8 @@ static void print_usage(const char *name)
 	printf("usage: %s <options>\n", name);
 	printf("\n"
 		"Options:\n"
-		"    -h, --help:            print this help\n"
-		"    -p, --percent <name>:  value to write to BCLM\n"
+		"    -h, --help:              print this help\n"
+		"    -p, --percent <number>:  value to write to BCLM\n"
 		"\n");
 }
 
