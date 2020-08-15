@@ -29,25 +29,8 @@ static void print_usage(const char *name)
 	printf("usage: %s <options>\n", name);
 	printf("\n"
 		"Options:\n"
-		"    -h, --help:        print this help\n"
-		"    -k, --key <name>:  key name\n"
-		"    -t, --type <type>: data type, see below\n"
-		"    --output-hex\n"
-		"    --output-bin\n"
-		"\n"
-		"Supported data types:\n"
-		"    ui8, ui16, ui32, si8, si16, flag, fpXY, spXY\n"
-		"\n"
-		"    fp and sp are unsigned and signed fixed point\n"
-		"    data types respectively.\n"
-		"\n"
-		"    The X in fp and sp data types is integer bits count\n"
-		"    and Y is fraction bits count.\n"
-		"\n"
-		"    For example,\n"
-		"    fpe2 means 14 integer bits, 2 fraction bits,\n"
-		"    sp78 means 7 integer bits, 8 fraction bits\n"
-		"    (and one sign bit).\n"
+		"    -h, --help:            print this help\n"
+		"    -p, --percent <name>:  value to write to BCLM\n"
 		"\n");
 }
 
