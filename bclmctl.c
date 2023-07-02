@@ -34,12 +34,27 @@ static void print_usage(const char *name)
 		"\n");
 }
 
+void print_key(const char *key)
+{
+	int retval;
+	uint8_t buf;
+	retval = read_smc(APPLESMC_READ_CMD, key, &buf, 1);
+	assert(retval == 0);
+	printf("%s = %u\n", key, buf);
+}
+
+void set_key(const char *key, uint8_t value)
+{
+	int retval;
+	retval = write_smc(APPLESMC_WRITE_CMD, key, &value, 1);
+	assert(retval == 0);
+}
 
 
 int main(int argc, char *argv[])
 {
-	char* name = "BCLM";
-	uint8_t len = 1;
+	char* bclm_key = "BCLM";
+	char* bfcl_key = "BFCL";
 	bool show_help = false;
 	bool set_value = false;
 	int opt, option_index = 0;
@@ -97,21 +112,15 @@ int main(int argc, char *argv[])
 	}
 
 	/* Read key from SMC */
-	int retval;
-	uint8_t buf;
-
 	if (set_value) {
-		buf=percent;
-		retval = write_smc(APPLESMC_WRITE_CMD, name, &buf, len);
-		assert(retval == 0);
+		// github.com/zackelia/bclm/blob/f240f37f99757fcc0b8f38ecab0d68de26665aef/Sources/bclm/main.swift#L67
+		uint8_t led_percent = percent - 5;
+		set_key(bclm_key, percent);
+		set_key(bfcl_key, led_percent);
 	}
 
-	buf = 0;
-	retval = read_smc(APPLESMC_READ_CMD, name, &buf, len);
-	assert(retval == 0);
-
-	/* Handle returned value according to the requested type */
-	printf("BCLM = %u\n", buf);
+	print_key(bclm_key);
+	print_key(bfcl_key);
 
 	return 0;
 }
