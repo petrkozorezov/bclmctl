@@ -35,10 +35,11 @@
 #define APPLESMC_READ_CMD	0x10
 #define APPLESMC_WRITE_CMD	0x11
 
-int wait_read(void);
-int send_byte(uint8_t cmd, uint16_t port);
-int send_command(uint8_t cmd);
-int send_argument(const char *key);
+/* Apple SMC status bits */
+#define SMC_STATUS_AWAITING_DATA  0x01 /* SMC has data waiting to be read */
+#define SMC_STATUS_IB_CLOSED      0x02 /* Will ignore any input */
+#define SMC_STATUS_BUSY           0x04 /* Command in progress */
+
 int read_smc(uint8_t cmd, const char *key, uint8_t *buffer, uint8_t len);
 int write_smc(uint8_t cmd, const char *key, const uint8_t *buffer, uint8_t len);
 

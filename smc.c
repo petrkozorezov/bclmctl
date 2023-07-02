@@ -23,65 +23,70 @@
 #include <stdio.h>
 #include "smc.h"
 
-/*
- * wait_read - Wait for a byte to appear on SMC port. Callers must
- * hold applesmc_lock.
- */
-int wait_read(void)
+static int wait_status(uint8_t val, uint8_t mask)
 {
 	uint8_t status;
 	int us;
-	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
-		usleep(us);
+	int i;
+
+	us = APPLESMC_MIN_WAIT;
+	for (i = 0; i < 24 ; i++) {
 		status = inb(APPLESMC_CMD_PORT);
-
-		/* read: wait for smc to settle */
-		if (status & 0x01)
+		if ((status & mask) == val)
 			return 0;
+		usleep(us);
+		if (i > 9)
+			us <<= 1;
 	}
-
-	fprintf(stderr, "%s() fail: 0x%02x\n", __func__, status);
 	return -EIO;
 }
 
-/*
- * send_byte - Write to SMC port, retrying when necessary. Callers
- * must hold applesmc_lock.
- */
-int send_byte(uint8_t cmd, uint16_t port)
+static int send_byte(uint8_t cmd, uint16_t port)
 {
-	uint8_t status;
-	int us;
+	int status;
+
+	status = wait_status(0, SMC_STATUS_IB_CLOSED);
+	if (status)
+		return status;
+	/*
+	 * This needs to be a separate read looking for bit 0x04
+	 * after bit 0x02 falls. If consolidated with the wait above
+	 * this extra read may not happen if status returns both
+	 * simultaneously and this would appear to be required.
+	 */
+	status = wait_status(SMC_STATUS_BUSY, SMC_STATUS_BUSY);
+	if (status)
+		return status;
 
 	outb(cmd, port);
-	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
-		usleep(us);
-		status = inb(APPLESMC_CMD_PORT);
-		/* write: wait for smc to settle */
-		if (status & 0x02)
-			continue;
-		/* ready: cmd accepted, return */
-		if (status & 0x04)
-			return 0;
-		/* timeout: give up */
-		if (us << 1 == APPLESMC_MAX_WAIT)
-			break;
-		/* busy: long wait and resend */
-		usleep(APPLESMC_RETRY_WAIT);
-		outb(cmd, port);
-	}
-
-	fprintf(stderr, "%s(0x%02x, 0x%04x) fail: 0x%02x\n",
-		__func__, cmd, port, status);
-	return -EIO;
+	return 0;
 }
 
-int send_command(uint8_t cmd)
+static int send_command(uint8_t cmd)
 {
-	return send_byte(cmd, APPLESMC_CMD_PORT);
+	int ret;
+
+	ret = wait_status(0, SMC_STATUS_IB_CLOSED);
+	if (ret)
+		return ret;
+	outb(cmd, APPLESMC_CMD_PORT);
+	return 0;
 }
 
-int send_argument(const char *key)
+static int smc_sane(void)
+{
+	int ret;
+
+	ret = wait_status(0, SMC_STATUS_BUSY);
+	if (!ret)
+		return ret;
+	ret = send_command(APPLESMC_READ_CMD);
+	if (ret)
+		return ret;
+	return wait_status(0, SMC_STATUS_BUSY);
+}
+
+static int send_argument(const char *key)
 {
 	int i;
 
@@ -95,6 +100,11 @@ int read_smc(uint8_t cmd, const char *key, uint8_t *buffer, uint8_t len)
 {
 	uint8_t status, data = 0;
 	int i;
+	int ret;
+
+	ret = smc_sane();
+	if (ret)
+		return ret;
 
 	if (send_command(cmd) || send_argument(key)) {
 		fprintf(stderr, "%.4s: read arg fail\n", key);
@@ -108,7 +118,8 @@ int read_smc(uint8_t cmd, const char *key, uint8_t *buffer, uint8_t len)
 	}
 
 	for (i = 0; i < len; i++) {
-		if (wait_read()) {
+		if (wait_status(SMC_STATUS_AWAITING_DATA | SMC_STATUS_BUSY,
+				SMC_STATUS_AWAITING_DATA | SMC_STATUS_BUSY)) {
 			fprintf(stderr, "%.4s: read data[%d] fail\n", key, i);
 			return -EIO;
 		}
@@ -119,21 +130,24 @@ int read_smc(uint8_t cmd, const char *key, uint8_t *buffer, uint8_t len)
 	for (i = 0; i < 16; i++) {
 		usleep(APPLESMC_MIN_WAIT);
 		status = inb(APPLESMC_CMD_PORT);
-		if (!(status & 0x01))
+		if (!(status & SMC_STATUS_AWAITING_DATA))
 			break;
 		data = inb(APPLESMC_DATA_PORT);
 	}
-
 	if (i)
-		fprintf(stderr, "flushed %d bytes, last value is: %d\n",
-			i, data);
+		fprintf(stderr, "flushed %d bytes, last value is: %d\n", i, data);
 
-	return 0;
+	return wait_status(0, SMC_STATUS_BUSY);
 }
 
 int write_smc(uint8_t cmd, const char *key, const uint8_t *buffer, uint8_t len)
 {
 	int i;
+	int ret;
+
+	ret = smc_sane();
+	if (ret)
+		return ret;
 
 	if (send_command(cmd) || send_argument(key)) {
 		fprintf(stderr, "%s: write arg fail\n", key);
@@ -152,5 +166,5 @@ int write_smc(uint8_t cmd, const char *key, const uint8_t *buffer, uint8_t len)
 		}
 	}
 
-	return 0;
+	return wait_status(0, SMC_STATUS_BUSY);
 }
